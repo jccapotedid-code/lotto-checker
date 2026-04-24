@@ -19,10 +19,16 @@ export default function LottoChecker() {
     '6/58': [
       'https://www.lottopcso.com/6-58-lotto-result-history-and-summary/',
       'https://www.lottopcso.com/6-58-ultra-lotto-result-history-summary-year-2025/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-and-summary-year-2024/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2023/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2022/',
     ],
     '6/42': [
       'https://www.lottopcso.com/6-42-lotto-result-history-and-summary/',
       'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2025/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-and-summary-year-2024/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2023/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2022/',
     ],
   };
 
@@ -292,7 +298,7 @@ export default function LottoChecker() {
               Minimum Matches to Show
             </label>
             <div className="flex gap-2">
-              {[2, 3, 4, 5].map((v) => (
+              {[3, 4, 5, 6].map((v) => (
                 <button
                   key={v}
                   onClick={() => setMinMatch(v)}
@@ -454,4 +460,4 @@ export default function LottoChecker() {
       </div>
     </div>
   );
-}4
+}
