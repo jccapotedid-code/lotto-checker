@@ -4,7 +4,6 @@ import { Search, Sparkles, Target, TrendingUp, AlertCircle, Loader2, Check, X } 
 export default function LottoChecker() {
   const [numbers, setNumbers] = useState(['', '', '', '', '', '']);
   const [gameType, setGameType] = useState('6/58');
-  const [minMatch, setMinMatch] = useState(3);
   const [results, setResults] = useState(null);
   const [allDraws, setAllDraws] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -12,13 +11,19 @@ export default function LottoChecker() {
   const [error, setError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
 
-  // Per game, list every historical page. Current year = "history-and-summary",
-  // prior years = "history-summary-year-XXXX" (6/42) or
-  // "ultra-lotto-result-history-summary-year-XXXX" (6/58).
+  // Current year page + 2025 only. Earlier years deliberately excluded.
   const GAME_URLS = {
     '6/58': [
       'https://www.lottopcso.com/6-58-lotto-result-history-and-summary/',
       'https://www.lottopcso.com/6-58-ultra-lotto-result-history-summary-year-2025/',
+    ],
+    '6/49': [
+      'https://www.lottopcso.com/6-49-lotto-result-history-and-summary/',
+      'https://www.lottopcso.com/6-49-super-lotto-result-history-summary-year-2025/',
+    ],
+    '6/45': [
+      'https://www.lottopcso.com/6-45-lotto-result-history-and-summary/',
+      'https://www.lottopcso.com/6-45-mega-lotto-result-history-summary-year-2025/',
     ],
     '6/42': [
       'https://www.lottopcso.com/6-42-lotto-result-history-and-summary/',
@@ -28,8 +33,12 @@ export default function LottoChecker() {
 
   const MAX_NUMBER = {
     '6/58': 58,
+    '6/49': 49,
+    '6/45': 45,
     '6/42': 42,
   };
+
+  const MIN_MATCH = 3; // fixed threshold: show draws where at least 3 of user's numbers matched
 
   const WORKER_URL = 'https://lotto-proxy.jccapote-did.workers.dev';
 
@@ -169,7 +178,7 @@ export default function LottoChecker() {
           const matchingNums = draw.numbers.filter((n) => userSet.has(n));
           return { ...draw, matchingNums, matchCount: matchingNums.length };
         })
-        .filter((d) => d.matchCount >= minMatch)
+        .filter((d) => d.matchCount >= MIN_MATCH)
         .sort((a, b) => b.matchCount - a.matchCount);
 
       setAllDraws(allDrawsCombined);
@@ -287,28 +296,6 @@ export default function LottoChecker() {
             </div>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-xs tracking-[0.2em] text-stone-500 uppercase mb-3" style={{ fontFamily: 'system-ui' }}>
-              Minimum Matches to Show
-            </label>
-            <div className="flex gap-2">
-              {[3, 4, 5, 6].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setMinMatch(v)}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    minMatch === v
-                      ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/30'
-                      : 'bg-white/5 text-stone-400 hover:bg-white/10 border border-white/5'
-                  }`}
-                  style={{ fontFamily: 'system-ui' }}
-                >
-                  {v}+
-                </button>
-              ))}
-            </div>
-          </div>
-
           <button
             onClick={fetchResults}
             disabled={loading}
@@ -363,7 +350,7 @@ export default function LottoChecker() {
                     {results.length} <span className="text-stone-500 font-normal text-base">{results.length === 1 ? 'match' : 'matches'}</span>
                   </div>
                   <div className="text-xs text-stone-500" style={{ fontFamily: 'system-ui' }}>
-                    across {allDraws.length} draws · {gameType} · {minMatch}+ hits
+                    across {allDraws.length} draws · {gameType} · {MIN_MATCH}+ hits
                   </div>
                 </div>
               </div>
@@ -379,7 +366,7 @@ export default function LottoChecker() {
               <div className="rounded-2xl p-10 text-center border border-stone-800 bg-black/30">
                 <X className="w-10 h-10 mx-auto mb-3 text-stone-600" />
                 <p className="text-stone-400" style={{ fontFamily: 'system-ui' }}>
-                  No historical draws matched {minMatch} or more of your numbers. Try lowering the threshold or picking different numbers.
+                  No historical draws matched {MIN_MATCH} or more of your numbers. Try picking different numbers.
                 </p>
               </div>
             )}
