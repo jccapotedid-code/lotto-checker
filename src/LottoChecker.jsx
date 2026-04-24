@@ -8,12 +8,28 @@ export default function LottoChecker() {
   const [results, setResults] = useState(null);
   const [allDraws, setAllDraws] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [error, setError] = useState(null);
   const [lastFetched, setLastFetched] = useState(null);
 
+  // Per game, list every historical page. Current year = "history-and-summary",
+  // prior years = "history-summary-year-XXXX" (6/42) or
+  // "ultra-lotto-result-history-summary-year-XXXX" (6/58).
   const GAME_URLS = {
-    '6/58': 'https://www.lottopcso.com/6-58-lotto-result-history-and-summary/',
-    '6/42': 'https://www.lottopcso.com/6-42-lotto-result-history-and-summary/',
+    '6/58': [
+      'https://www.lottopcso.com/6-58-lotto-result-history-and-summary/',
+      'https://www.lottopcso.com/6-58-ultra-lotto-result-history-summary-year-2025/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-and-summary-year-2024/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2023/',
+      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2022/',
+    ],
+    '6/42': [
+      'https://www.lottopcso.com/6-42-lotto-result-history-and-summary/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2025/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-and-summary-year-2024/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2023/',
+      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2022/',
+    ],
   };
 
   const MAX_NUMBER = {
@@ -74,9 +90,11 @@ export default function LottoChecker() {
     setLoading(true);
     setResults(null);
 
-    try {
-      const target = GAME_URLS[gameType];
+    const urls = GAME_URLS[gameType];
+    setProgress({ done: 0, total: urls.length });
 
+    // Helper: try each proxy in order until one returns usable HTML for a URL.
+    const fetchOne = async (target) => {
       const proxies = [
         {
           name: 'your-worker',
@@ -100,33 +118,59 @@ export default function LottoChecker() {
         },
       ];
 
-      let html = null;
-      const failures = [];
       for (const proxy of proxies) {
         try {
-          const response = await fetch(proxy.url, { signal: AbortSignal.timeout(15000) });
-          if (!response.ok) {
-            failures.push(`${proxy.name}: HTTP ${response.status}`);
-            continue;
+          const response = await fetch(proxy.url, { signal: AbortSignal.timeout(20000) });
+          if (!response.ok) continue;
+          const html = await proxy.extract(response);
+          if (html && html.length > 500) return html;
+        } catch {
+          // try next proxy
+        }
+      }
+      return null;
+    };
+
+    try {
+      // Kick off all year-pages in parallel, increment progress as each settles.
+      const htmlResults = await Promise.all(
+        urls.map(async (u) => {
+          const html = await fetchOne(u);
+          setProgress((p) => ({ ...p, done: p.done + 1 }));
+          return { url: u, html };
+        })
+      );
+
+      // Dedupe draws by date — if the same draw somehow appears on two pages,
+      // the first occurrence wins.
+      const seen = new Set();
+      const allDrawsCombined = [];
+      const pageFailures = [];
+
+      for (const { url, html } of htmlResults) {
+        if (!html) {
+          pageFailures.push(url.split('/').filter(Boolean).pop());
+          continue;
+        }
+        const draws = parseResults(html);
+        for (const d of draws) {
+          if (!seen.has(d.date)) {
+            seen.add(d.date);
+            allDrawsCombined.push(d);
           }
-          html = await proxy.extract(response);
-          if (html && html.length > 500) break;
-          failures.push(`${proxy.name}: empty response`);
-          html = null;
-        } catch (e) {
-          failures.push(`${proxy.name}: ${e.message || 'network error'}`);
         }
       }
 
-      if (!html) {
-        throw new Error(`All proxies failed. ${failures.join(' | ')}`);
+      if (allDrawsCombined.length === 0) {
+        throw new Error(
+          pageFailures.length === urls.length
+            ? 'Could not fetch any page. Proxies may be down — wait 30 seconds and retry.'
+            : 'Could not parse draws from the pages. Site structure may have changed.'
+        );
       }
 
-      const draws = parseResults(html);
-      if (draws.length === 0) throw new Error('Could not parse draws from the page. The site structure may have changed.');
-
       const userSet = new Set(parsedNums);
-      const matches = draws
+      const matches = allDrawsCombined
         .map((draw) => {
           const matchingNums = draw.numbers.filter((n) => userSet.has(n));
           return { ...draw, matchingNums, matchCount: matchingNums.length };
@@ -134,7 +178,7 @@ export default function LottoChecker() {
         .filter((d) => d.matchCount >= minMatch)
         .sort((a, b) => b.matchCount - a.matchCount);
 
-      setAllDraws(draws);
+      setAllDraws(allDrawsCombined);
       setResults(matches);
       setLastFetched(new Date());
     } catch (e) {
@@ -287,7 +331,9 @@ export default function LottoChecker() {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Scanning draw history...
+                {progress.total > 0
+                  ? `Scanning ${progress.done}/${progress.total} years...`
+                  : 'Scanning draw history...'}
               </>
             ) : (
               <>
@@ -414,4 +460,4 @@ export default function LottoChecker() {
       </div>
     </div>
   );
-}
+}4
