@@ -19,16 +19,10 @@ export default function LottoChecker() {
     '6/58': [
       'https://www.lottopcso.com/6-58-lotto-result-history-and-summary/',
       'https://www.lottopcso.com/6-58-ultra-lotto-result-history-summary-year-2025/',
-      'https://www.lottopcso.com/6-58-lotto-result-history-and-summary-year-2024/',
-      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2023/',
-      'https://www.lottopcso.com/6-58-lotto-result-history-summary-year-2022/',
     ],
     '6/42': [
       'https://www.lottopcso.com/6-42-lotto-result-history-and-summary/',
       'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2025/',
-      'https://www.lottopcso.com/6-42-lotto-result-history-and-summary-year-2024/',
-      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2023/',
-      'https://www.lottopcso.com/6-42-lotto-result-history-summary-year-2022/',
     ],
   };
 
